@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use warp::{Filter};
 use std::net::Ipv4Addr;
@@ -14,7 +13,7 @@ async fn main() {
         Err(_) => 3000,
     };
 
-    let routes = filters::hello().with(warp::log("drquiz"));
+    let routes = filters::quizzes().with(warp::log("drquiz"));
 
     warp::serve(routes).run((Ipv4Addr::UNSPECIFIED, port)).await
 }
