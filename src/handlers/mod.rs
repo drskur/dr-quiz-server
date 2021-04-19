@@ -1,35 +1,16 @@
 use std::convert::Infallible;
 use std::collections::HashMap;
 use crate::models::{AddQuizRequest, Quiz};
-use mongodb::options::ClientOptions;
-use mongodb::{Client, Database, Collection, bson, bson::Document};
+use mongodb::{Client, bson};
 use mongodb::bson::doc;
 use futures::stream::StreamExt;
 use futures::FutureExt;
+use crate::get_quiz_collection;
 
-async fn get_quiz_collection() -> mongodb::error::Result<Collection<Quiz>> {
-    let mut opt = ClientOptions::parse("mongodb://drskur:hNkEVxtL0hzrSukhZnNXktU4lmlzWFtoWs2MlGykDhdnQlMfEv9AYxwbeYrDDDlx5DgxqePR1Cx8Xyy5zNYh3A==@drskur.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@drskur@")
-        .await?;
-    let client = Client::with_options(opt)?;
-    let db = client.database("drquiz");
-    let coll = db.collection("quizzes");
 
-    Ok(coll)
-}
+pub async fn quizzes(p: HashMap<String, String>, client: Client) -> Result<impl warp::Reply, Infallible> {
 
-async fn get_quiz_document_collection() -> mongodb::error::Result<Collection<Document>> {
-    let mut opt = ClientOptions::parse("mongodb://drskur:hNkEVxtL0hzrSukhZnNXktU4lmlzWFtoWs2MlGykDhdnQlMfEv9AYxwbeYrDDDlx5DgxqePR1Cx8Xyy5zNYh3A==@drskur.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@drskur@")
-        .await?;
-    let client = Client::with_options(opt)?;
-    let db = client.database("drquiz");
-    let coll = db.collection("quizzes");
-
-    Ok(coll)
-}
-
-pub async fn quizzes(p: HashMap<String, String>) -> Result<impl warp::Reply, Infallible> {
-    let coll = get_quiz_collection().await
-        .expect("cannot open collection");
+    let coll = get_quiz_collection(client);
 
     let cursor = coll.find(doc!{  }, None).await
         .expect("cannot find documents");
@@ -42,10 +23,9 @@ pub async fn quizzes(p: HashMap<String, String>) -> Result<impl warp::Reply, Inf
     Ok(warp::reply::json(&docs))
 }
 
-pub async fn add_quiz(req: AddQuizRequest) -> Result<impl warp::Reply, Infallible> {
+pub async fn add_quiz(req: AddQuizRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
 
-    let coll = get_quiz_collection().await
-        .expect("cannot open collection");
+    let coll = get_quiz_collection(client);
 
     let new_quiz = Quiz {
         _id: bson::oid::ObjectId::new(),
