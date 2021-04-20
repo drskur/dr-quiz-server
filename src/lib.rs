@@ -18,7 +18,5 @@ pub async fn get_mongodb_client() -> mongodb::error::Result<Client> {
 
 pub fn get_collection<T: Serialize + DeserializeOwned + Unpin + Debug>(client: mongodb::Client, coll_name: &str) -> Collection<T> {
     let db = client.database("drquiz");
-    let coll = db.collection(coll_name);
-
-    coll
+    db.collection(coll_name)
 }

@@ -11,7 +11,7 @@ pub async fn quizzes(req: QuizzesRequest, client: Client) -> Result<impl warp::R
     let coll = get_collection::<Quiz>(client, "quizzes");
 
     let find_options = FindOptions::builder()
-        .limit(req.limit.unwrap_or_else(|| 10))
+        .limit(req.limit.unwrap_or(10))
         .build();
 
     let cursor = coll.find(doc! {  }, Some(find_options)).await
@@ -29,7 +29,7 @@ pub async fn recent_added_quizzes(req: RecentAddedQuizzesRequest, client: Client
     let coll = get_collection::<Quiz>(client, "quizzes");
 
     let find_options = FindOptions::builder()
-        .limit(req.limit.unwrap_or_else(|| 10))
+        .limit(req.limit.unwrap_or(10))
         .sort(doc! { "_id": -1 })
         .build();
 

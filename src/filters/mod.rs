@@ -8,7 +8,7 @@ pub fn quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Error 
         .or(recent_added_quizzes(client.clone()))
         .or(add_quiz(client.clone()))
         .or(put_quiz(client.clone()))
-        .or(delete_quiz(client.clone()))
+        .or(delete_quiz(client))
 }
 
 fn with_mongodb(client: Client) -> impl Filter<Extract = (Client,), Error = std::convert::Infallible> + Clone {
