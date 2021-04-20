@@ -1,6 +1,8 @@
 use mongodb::options::ClientOptions;
 use mongodb::{Client, Collection};
-use crate::models::Quiz;
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+use std::fmt::Debug;
 
 pub mod handlers;
 pub mod models;
@@ -14,9 +16,9 @@ pub async fn get_mongodb_client() -> mongodb::error::Result<Client> {
     Ok(client)
 }
 
-pub fn get_quiz_collection(client: mongodb::Client) -> Collection<Quiz> {
+pub fn get_collection<T: Serialize + DeserializeOwned + Unpin + Debug>(client: mongodb::Client, coll_name: &str) -> Collection<T> {
     let db = client.database("drquiz");
-    let coll = db.collection("quizzes");
+    let coll = db.collection(coll_name);
 
     coll
 }
