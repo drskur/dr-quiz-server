@@ -1,5 +1,5 @@
 use std::convert::Infallible;
-use crate::models::{Quiz, RecentAddedQuizzesRequest, QuizRequest, QuizzesRequest};
+use crate::models::{Quiz, RecentAddedQuizzesRequest, QuizRequest, QuizzesRequest, QuizYamlRequest};
 use mongodb::{Client, bson};
 use mongodb::bson::{doc, Document};
 use futures::stream::StreamExt;
@@ -55,6 +55,22 @@ pub async fn add_quiz(new_quiz: QuizRequest, client: Client) -> Result<impl warp
     Ok(warp::reply::json(&result))
 }
 
+pub async fn add_quiz_yaml(req: QuizYamlRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
+    let coll = get_collection::<Document>(client, "quizzes");
+
+    let new_quiz = serde_yaml::from_str::<QuizRequest>(&req.yaml)
+        .expect("wrong formatted yaml");
+
+    let doc = bson::to_document(&new_quiz).unwrap();
+    let result = coll.insert_one(doc, None).await
+        .expect("cannot insert quiz");
+
+    let quiz = coll.find_one(doc! {"_id": result.inserted_id}, None).await
+        .expect("cannot find added quiz");
+
+    Ok(warp::reply::json(&quiz))
+}
+
 pub async fn put_quiz(id: String, quiz: QuizRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
     let coll = get_collection::<Quiz>(client, "quizzes");
     let update = doc! {
@@ -68,12 +84,10 @@ pub async fn put_quiz(id: String, quiz: QuizRequest, client: Client) -> Result<i
     Ok(warp::reply::json(&result))
 }
 
-pub async fn put_quiz_yaml(id: String, yaml_bytes: bytes::Bytes, client: Client) -> Result<impl warp::Reply, Infallible> {
+pub async fn put_quiz_yaml(id: String, req: QuizYamlRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
     let coll = get_collection::<Quiz>(client, "quizzes");
 
-    let yaml = String::from_utf8(yaml_bytes.to_vec())
-        .expect("wrong formatted yaml");
-    let quiz = serde_yaml::from_str::<QuizRequest>(&yaml)
+    let quiz = serde_yaml::from_str::<QuizRequest>(&req.yaml)
         .expect("wrong formatted yaml");
 
     let update = doc! {
@@ -105,7 +119,7 @@ pub async fn quiz_yaml(id: String, client: Client) -> Result<impl warp::Reply, I
         .and_then(|q| serde_yaml::to_string(&q).ok());
 
     let res = Response::builder()
-        .header("Content-Type", "text/yaml")
+        .header("Content-Type", "text/yaml;charset=utf-8")
         .body(quiz.unwrap_or_default())
         .unwrap();
 

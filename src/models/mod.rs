@@ -9,6 +9,11 @@ pub struct QuizRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct QuizYamlRequest {
+    pub yaml: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Quiz {
     pub _id: Option<ObjectId>,
     pub subject: String,

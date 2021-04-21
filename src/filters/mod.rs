@@ -7,6 +7,7 @@ pub fn quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Error 
     get_quiz_yaml(client.clone())
         .or(get_quizzes(client.clone()))
         .or(recent_added_quizzes(client.clone()))
+        .or(add_quiz_yaml(client.clone()))
         .or(add_quiz(client.clone()))
         .or(put_quiz_yaml(client.clone()))
         .or(put_quiz(client.clone()))
@@ -50,6 +51,14 @@ pub fn add_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error
         .and_then(handlers::add_quiz)
 }
 
+pub fn add_quiz_yaml(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::post()
+        .and(warp::path!("api" / "quizzes" / "yaml"))
+        .and(warp::body::json())
+        .and(with_mongodb(client))
+        .and_then(handlers::add_quiz_yaml)
+}
+
 pub fn put_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::put()
         .and(warp::path!("api" / "quizzes" / String))
@@ -61,7 +70,7 @@ pub fn put_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error
 pub fn put_quiz_yaml(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::put()
         .and(warp::path!("api" / "quizzes" / String / "yaml"))
-        .and(warp::body::bytes())
+        .and(warp::body::json())
         .and(with_mongodb(client))
         .and_then(handlers::put_quiz_yaml)
 }
