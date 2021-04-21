@@ -4,9 +4,11 @@ use mongodb::Client;
 use crate::models::{RecentAddedQuizzesRequest, QuizzesRequest};
 
 pub fn quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    get_quizzes(client.clone())
+    get_quiz_yaml(client.clone())
+        .or(get_quizzes(client.clone()))
         .or(recent_added_quizzes(client.clone()))
         .or(add_quiz(client.clone()))
+        .or(put_quiz_yaml(client.clone()))
         .or(put_quiz(client.clone()))
         .or(delete_quiz(client))
 }
@@ -22,6 +24,13 @@ pub fn get_quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Er
         .and(warp::query::<QuizzesRequest>())
         .and(with_mongodb(client))
         .and_then(handlers::quizzes)
+}
+
+pub fn get_quiz_yaml(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path!("api" / "quizzes" / String / "yaml"))
+        .and(with_mongodb(client))
+        .and_then(handlers::quiz_yaml)
 }
 
 pub fn recent_added_quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -47,6 +56,14 @@ pub fn put_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error
         .and(warp::body::json())
         .and(with_mongodb(client))
         .and_then(handlers::put_quiz)
+}
+
+pub fn put_quiz_yaml(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::put()
+        .and(warp::path!("api" / "quizzes" / String / "yaml"))
+        .and(warp::body::bytes())
+        .and(with_mongodb(client))
+        .and_then(handlers::put_quiz_yaml)
 }
 
 pub fn delete_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {

@@ -6,6 +6,7 @@ use futures::stream::StreamExt;
 use crate::{get_collection};
 use mongodb::options::{FindOptions};
 use std::str::FromStr;
+use warp::http::Response;
 
 pub async fn quizzes(req: QuizzesRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
     let coll = get_collection::<Quiz>(client, "quizzes");
@@ -67,6 +68,25 @@ pub async fn put_quiz(id: String, quiz: QuizRequest, client: Client) -> Result<i
     Ok(warp::reply::json(&result))
 }
 
+pub async fn put_quiz_yaml(id: String, yaml_bytes: bytes::Bytes, client: Client) -> Result<impl warp::Reply, Infallible> {
+    let coll = get_collection::<Quiz>(client, "quizzes");
+
+    let yaml = String::from_utf8(yaml_bytes.to_vec())
+        .expect("wrong formatted yaml");
+    let quiz = serde_yaml::from_str::<QuizRequest>(&yaml)
+        .expect("wrong formatted yaml");
+
+    let update = doc! {
+        "$set": bson::to_document(&quiz).unwrap()
+    };
+
+    let oid = bson::oid::ObjectId::from_str(&id).unwrap();
+    let result = coll.update_one(doc! { "_id": oid }, update, None).await
+        .expect("cannot update quiz");
+
+    Ok(warp::reply::json(&result))
+}
+
 pub async fn delete_quiz(id: String, client: Client) -> Result<impl warp::Reply, Infallible> {
     let coll = get_collection::<Quiz>(client, "quizzes");
     let oid = bson::oid::ObjectId::from_str(&id).unwrap();
@@ -74,4 +94,20 @@ pub async fn delete_quiz(id: String, client: Client) -> Result<impl warp::Reply,
         .expect("cannot delete quiz");
 
     Ok(warp::reply::json(&result))
+}
+
+pub async fn quiz_yaml(id: String, client: Client) -> Result<impl warp::Reply, Infallible> {
+    let coll = get_collection::<Quiz>(client, "quizzes");
+
+    let oid = bson::oid::ObjectId::from_str(&id).unwrap();
+    let quiz = coll.find_one(doc! { "_id": oid }, None).await
+        .expect("cannot find document")
+        .and_then(|q| serde_yaml::to_string(&q).ok());
+
+    let res = Response::builder()
+        .header("Content-Type", "text/yaml")
+        .body(quiz.unwrap_or_default())
+        .unwrap();
+
+    Ok(res)
 }
