@@ -132,10 +132,19 @@ pub async fn next_quiz(req: NextQuizRequest, client: Client) -> Result<impl warp
     let mut doc = Document::new();
 
     if let Some(subject) = req.subject {
-        doc.insert("subject", subject);
+        if !subject.is_empty() {
+            doc.insert("subject", subject);
+        }
     }
 
-    if let Some(oid) = req.oid.and_then(|id| bson::oid::ObjectId::from_str(&id).ok()) {
+    if let Some(oid) = req.oid.and_then(|id| {
+        if id.is_empty() {
+            None
+        } else {
+            bson::oid::ObjectId::from_str(&id).ok()
+        }
+    }) {
+
         doc.insert("_id", doc! {
             "$gt": oid
         });
