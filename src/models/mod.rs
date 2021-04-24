@@ -40,3 +40,9 @@ pub struct QuizzesRequest {
 pub struct RecentAddedQuizzesRequest {
     pub limit: Option<i64>
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct NextQuizRequest {
+    pub subject: Option<String>,
+    pub oid: Option<String>
+}

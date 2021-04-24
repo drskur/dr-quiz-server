@@ -1,5 +1,5 @@
 use std::convert::Infallible;
-use crate::models::{Quiz, RecentAddedQuizzesRequest, QuizRequest, QuizzesRequest, QuizYamlRequest};
+use crate::models::{Quiz, RecentAddedQuizzesRequest, QuizRequest, QuizzesRequest, QuizYamlRequest, NextQuizRequest};
 use mongodb::{Client, bson};
 use mongodb::bson::{doc, Document};
 use futures::stream::StreamExt;
@@ -124,4 +124,25 @@ pub async fn quiz_yaml(id: String, client: Client) -> Result<impl warp::Reply, I
         .unwrap();
 
     Ok(res)
+}
+
+pub async fn next_quiz(req: NextQuizRequest, client: Client) -> Result<impl warp::Reply, Infallible> {
+    let coll = get_collection::<Quiz>(client, "quizzes");
+
+    let mut doc = Document::new();
+
+    if let Some(subject) = req.subject {
+        doc.insert("subject", subject);
+    }
+
+    if let Some(oid) = req.oid.and_then(|id| bson::oid::ObjectId::from_str(&id).ok()) {
+        doc.insert("_id", doc! {
+            "$gt": oid
+        });
+    }
+
+    let quiz = coll.find_one(doc, None).await
+        .expect("cannot find any document");
+
+    Ok(warp::reply::json(&quiz))
 }

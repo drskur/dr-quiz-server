@@ -1,10 +1,11 @@
 use warp::Filter;
 use super::handlers;
 use mongodb::Client;
-use crate::models::{RecentAddedQuizzesRequest, QuizzesRequest};
+use crate::models::{RecentAddedQuizzesRequest, QuizzesRequest, NextQuizRequest};
 
 pub fn quizzes(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    get_quiz_yaml(client.clone())
+    next_quiz(client.clone())
+        .or(get_quiz_yaml(client.clone()))
         .or(get_quizzes(client.clone()))
         .or(recent_added_quizzes(client.clone()))
         .or(add_quiz_yaml(client.clone()))
@@ -57,6 +58,14 @@ pub fn add_quiz_yaml(client: Client) -> impl Filter<Extract = impl warp::Reply, 
         .and(warp::body::json())
         .and(with_mongodb(client))
         .and_then(handlers::add_quiz_yaml)
+}
+
+pub fn next_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path!("api" / "quizzes" / "next"))
+        .and(warp::query::<NextQuizRequest>())
+        .and(with_mongodb(client))
+        .and_then(handlers::next_quiz)
 }
 
 pub fn put_quiz(client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
